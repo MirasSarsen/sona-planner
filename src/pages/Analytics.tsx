@@ -307,6 +307,16 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Motivational Modal */}
+      <MotivationalModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        message={motivationalMessage}
+        imageUrl={motivationalImage}
+        isLoading={isLoadingMessage}
+        mood={savedMood}
+      />
     </div>
   );
 }
