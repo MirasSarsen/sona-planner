@@ -52,7 +52,9 @@ export default function Analytics() {
   const [savedMood, setSavedMood] = useState<number | null>(null);
   const [moodCalendar] = useState(generateMoodCalendar);
   const [motivationalMessage, setMotivationalMessage] = useState<string | null>(null);
+  const [motivationalImage, setMotivationalImage] = useState<string | null>(null);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const now = new Date();
   const year = now.getFullYear();
