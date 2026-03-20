@@ -72,11 +72,47 @@ export default function Analytics() {
     "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан",
   ];
 
+  const fetchRandomMotivationImage = async () => {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from("content")
+        .list("motivation", { limit: 100 });
+
+      if (error || !files || files.length === 0) {
+        console.log("No motivation images found:", error);
+        return null;
+      }
+
+      // Filter only image files
+      const imageFiles = files.filter((f) =>
+        /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
+      );
+      if (imageFiles.length === 0) return null;
+
+      const randomFile = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+      const { data: urlData } = supabase.storage
+        .from("content")
+        .getPublicUrl(`motivation/${randomFile.name}`);
+
+      return urlData?.publicUrl || null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSaveMood = async () => {
     if (!selectedMood) return;
     setSavedMood(selectedMood);
     setMotivationalMessage(null);
+    setMotivationalImage(null);
     setIsLoadingMessage(true);
+    setShowModal(true);
+
+    // Fetch image and AI message in parallel
+    const [imageUrl] = await Promise.all([
+      fetchRandomMotivationImage(),
+    ]);
+    setMotivationalImage(imageUrl);
 
     try {
       const { data, error } = await supabase.functions.invoke("motivational-message", {
