@@ -189,21 +189,6 @@ export default function Analytics() {
                 Бүгінгі көңіл-күй: {moodEmojis[savedMood - 1]} {moodLabels[savedMood - 1]}
               </p>
             )}
-            {/* AI Motivational Message */}
-            {isLoadingMessage && (
-              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 text-center">
-                <div className="animate-pulse text-sm text-muted-foreground">
-                  ✨ AI хабарлама дайындалуда...
-                </div>
-              </div>
-            )}
-            {motivationalMessage && !isLoadingMessage && (
-              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm font-medium text-foreground leading-relaxed">
-                  🤖 {motivationalMessage}
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
