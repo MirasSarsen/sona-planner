@@ -9,46 +9,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrendingUp, Pause, Square, Play, Plus, Pencil, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { supabase } from "@/lib/supabase";
 
 interface Task {
-  id: string;
-  title: string;
-  deadline: string | null;
-  priority: "low" | "medium" | "high";
-  status: "todo" | "in_progress" | "done";
+  id: number;
+  name: string;
+  deadline: string;
+  priority: "Жоғары" | "Орташа" | "Төмен";
+  status: "Жасау керек" | "Орындалуда" | "Аяқталды";
 }
 
-const priorityColors: Record<string, string> = {
-  high: "bg-red-500 text-white hover:bg-red-600",
-  medium: "bg-orange-400 text-white hover:bg-orange-500",
-  low: "bg-emerald-500 text-white hover:bg-emerald-600",
-};
+const defaultTasks: Task[] = [
+  { id: 1, name: "Математика үй тапсырмасы", deadline: "2024-05-20T15:00", priority: "Жоғары", status: "Жасау керек" },
+  { id: 2, name: "Эссе жазу", deadline: "2024-05-20T15:00", priority: "Орташа", status: "Жасау керек" },
+  { id: 3, name: "Презентация дайындау", deadline: "2024-05-20T15:00", priority: "Төмен", status: "Орындалуда" },
+  { id: 4, name: "Дедлайн еэсе жазу", deadline: "2024-05-20T15:00", priority: "Жоғары", status: "Аяқталды" },
+];
 
-const priorityLabels: Record<string, string> = {
-  high: "Жоғары",
-  medium: "Орташа",
-  low: "Төмен",
+const emptyTask: Omit<Task, "id"> = { name: "", deadline: "", priority: "Орташа", status: "Жасау керек" };
+
+const priorityColors: Record<string, string> = {
+  "Жоғары": "bg-red-500 text-white hover:bg-red-600",
+  "Орташа": "bg-orange-400 text-white hover:bg-orange-500",
+  "Төмен": "bg-emerald-500 text-white hover:bg-emerald-600",
 };
 
 const statusColors: Record<string, string> = {
-  todo: "bg-muted text-foreground hover:bg-muted/80",
-  in_progress: "bg-orange-400 text-white hover:bg-orange-500",
-  done: "bg-emerald-500 text-white hover:bg-emerald-600",
-};
-
-const statusLabels: Record<string, string> = {
-  todo: "Жасау керек",
-  in_progress: "Орындалуда",
-  done: "Аяқталды",
+  "Жасау керек": "bg-muted text-foreground hover:bg-muted/80",
+  "Орындалуда": "bg-orange-400 text-white hover:bg-orange-500",
+  "Аяқталды": "bg-emerald-500 text-white hover:bg-emerald-600",
 };
 
 const dayNames = ["Дс", "Сс", "Ср", "Бс", "Жм", "Сн", "Жс"];
 
-const emptyForm = { title: "", deadline: "", priority: "medium" as Task["priority"], status: "todo" as Task["status"] };
-
 function useTimer() {
-  const [seconds, setSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(5120);
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
@@ -64,74 +58,31 @@ function useTimer() {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
-  return {
-    time: fmt(seconds),
-    running,
-    play: () => setRunning(true),
-    pause: () => setRunning(false),
-    stop: () => { setRunning(false); setSeconds(0); },
-  };
+  return { time: fmt(seconds), running, play: () => setRunning(true), pause: () => setRunning(false), stop: () => { setRunning(false); setSeconds(0); } };
 }
 
 export default function Index() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<Omit<Task, "id">>(emptyTask);
   const timer = useTimer();
 
-  // Загрузка задач из Supabase
-  const loadTasks = useCallback(async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("tasks")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setTasks(data);
-    setLoading(false);
-  }, []);
+  const completed = tasks.filter((t) => t.status === "Аяқталды").length;
+  const inProgress = tasks.filter((t) => t.status === "Орындалуда").length;
 
-  useEffect(() => { loadTasks(); }, [loadTasks]);
+  const openAdd = () => { setEditingTask(null); setForm(emptyTask); setModalOpen(true); };
+  const openEdit = (t: Task) => { setEditingTask(t); setForm({ name: t.name, deadline: t.deadline, priority: t.priority, status: t.status }); setModalOpen(true); };
+  const deleteTask = (id: number) => setTasks((ts) => ts.filter((t) => t.id !== id));
 
-  const completed = tasks.filter((t) => t.status === "done").length;
-  const inProgress = tasks.filter((t) => t.status === "in_progress").length;
-
-  const openAdd = () => { setEditingTask(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (t: Task) => {
-    setEditingTask(t);
-    setForm({ title: t.title, deadline: t.deadline ?? "", priority: t.priority, status: t.status });
-    setModalOpen(true);
-  };
-
-    const saveTask = async () => {
-    if (!form.title) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
+  const saveTask = () => {
+    if (!form.name) return;
     if (editingTask) {
-      await supabase.from("tasks").update({
-        title: form.title,
-        deadline: form.deadline || null,
-        priority: form.priority,
-        status: form.status,
-      }).eq("id", editingTask.id);
+      setTasks((ts) => ts.map((t) => (t.id === editingTask.id ? { ...t, ...form } : t)));
     } else {
-      await supabase.from("tasks").insert({
-        user_id: user.id,   
-        title: form.title,
-        deadline: form.deadline || null,
-        priority: form.priority,
-        status: form.status,
-      });
+      setTasks((ts) => [...ts, { ...form, id: Date.now() }]);
     }
     setModalOpen(false);
-    loadTasks();
-  };
-
-  const deleteTask = async (id: string) => {
-    await supabase.from("tasks").delete().eq("id", id);
-    setTasks((ts) => ts.filter((t) => t.id !== id));
   };
 
   const getWeeklyData = useCallback(() => {
@@ -142,12 +93,12 @@ export default function Index() {
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
       const dayStr = day.toISOString().split("T")[0];
-      const count = tasks.filter((t) => t.deadline?.startsWith(dayStr)).length;
+      const count = tasks.filter((t) => t.deadline.startsWith(dayStr)).length;
       return { name, count };
     });
   }, [tasks]);
 
-  const formatDeadline = (d: string | null) => {
+  const formatDeadline = (d: string) => {
     if (!d) return "";
     const dt = new Date(d);
     return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}, ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
@@ -234,15 +185,12 @@ export default function Index() {
                     </tr>
                   </thead>
                   <tbody>
-                    {loading && (
-                      <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Жүктелуде...</td></tr>
-                    )}
-                    {!loading && tasks.map((t) => (
+                    {tasks.map((t) => (
                       <tr key={t.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
-                        <td className="py-3 px-2 font-medium text-foreground">{t.title}</td>
+                        <td className="py-3 px-2 font-medium text-foreground">{t.name}</td>
                         <td className="py-3 px-2 text-muted-foreground">{formatDeadline(t.deadline)}</td>
-                        <td className="py-3 px-2"><Badge className={`${priorityColors[t.priority]} text-xs`}>{priorityLabels[t.priority]}</Badge></td>
-                        <td className="py-3 px-2"><Badge className={`${statusColors[t.status]} text-xs`}>{statusLabels[t.status]}</Badge></td>
+                        <td className="py-3 px-2"><Badge className={`${priorityColors[t.priority]} text-xs`}>{t.priority}</Badge></td>
+                        <td className="py-3 px-2"><Badge className={`${statusColors[t.status]} text-xs`}>{t.status}</Badge></td>
                         <td className="py-3 px-2 text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -251,7 +199,7 @@ export default function Index() {
                         </td>
                       </tr>
                     ))}
-                    {!loading && tasks.length === 0 && (
+                    {tasks.length === 0 && (
                       <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Тапсырмалар жоқ</td></tr>
                     )}
                   </tbody>
@@ -302,7 +250,7 @@ export default function Index() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Тапсырма атауы</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Тапсырма атауы..." />
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Тапсырма атауы..." />
             </div>
             <div className="space-y-1.5">
               <Label>Дедлайн</Label>
@@ -313,9 +261,9 @@ export default function Index() {
               <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as Task["priority"] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high">Жоғары</SelectItem>
-                  <SelectItem value="medium">Орташа</SelectItem>
-                  <SelectItem value="low">Төмен</SelectItem>
+                  <SelectItem value="Жоғары">Жоғары</SelectItem>
+                  <SelectItem value="Орташа">Орташа</SelectItem>
+                  <SelectItem value="Төмен">Төмен</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -324,9 +272,9 @@ export default function Index() {
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Task["status"] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">Жасау керек</SelectItem>
-                  <SelectItem value="in_progress">Орындалуда</SelectItem>
-                  <SelectItem value="done">Аяқталды</SelectItem>
+                  <SelectItem value="Жасау керек">Жасау керек</SelectItem>
+                  <SelectItem value="Орындалуда">Орындалуда</SelectItem>
+                  <SelectItem value="Аяқталды">Аяқталды</SelectItem>
                 </SelectContent>
               </Select>
             </div>
