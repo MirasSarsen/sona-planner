@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import MotivationalModal from "@/components/MotivationalModal";
 
 // Mood data
 const moodEmojis = ["😢", "😟", "😐", "🙂", "😄"];
