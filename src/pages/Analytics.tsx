@@ -5,6 +5,8 @@ import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 // Mood data
 const moodEmojis = ["😢", "😟", "😐", "🙂", "😄"];
@@ -48,6 +50,8 @@ export default function Analytics() {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [savedMood, setSavedMood] = useState<number | null>(null);
   const [moodCalendar] = useState(generateMoodCalendar);
+  const [motivationalMessage, setMotivationalMessage] = useState<string | null>(null);
+  const [isLoadingMessage, setIsLoadingMessage] = useState(false);
 
   const now = new Date();
   const year = now.getFullYear();
@@ -64,6 +68,49 @@ export default function Analytics() {
     "Қаңтар", "Ақпан", "Наурыз", "Сәуір", "Мамыр", "Маусым",
     "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан",
   ];
+
+  const handleSaveMood = async () => {
+    if (!selectedMood) return;
+    setSavedMood(selectedMood);
+    setMotivationalMessage(null);
+    setIsLoadingMessage(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("motivational-message", {
+        body: { mood: selectedMood },
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        toast({
+          title: "Қате",
+          description: "Мотивациялық хабарламаны алу мүмкін болмады.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        toast({
+          title: "Қате",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMotivationalMessage(data.message);
+    } catch (err) {
+      console.error("Error fetching motivational message:", err);
+      toast({
+        title: "Қате",
+        description: "Серверге қосылу мүмкін болмады.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMessage(false);
+    }
+  };
 
   return (
     <div>
@@ -92,16 +139,31 @@ export default function Analytics() {
             </div>
             <div className="flex justify-center">
               <Button
-                onClick={() => { if (selectedMood) setSavedMood(selectedMood); }}
-                disabled={!selectedMood}
+                onClick={handleSaveMood}
+                disabled={!selectedMood || isLoadingMessage}
               >
-                Сақтау
+                {isLoadingMessage ? "Жүктелуде..." : "Сақтау"}
               </Button>
             </div>
             {savedMood && (
               <p className="text-center text-sm text-muted-foreground mt-3">
                 Бүгінгі көңіл-күй: {moodEmojis[savedMood - 1]} {moodLabels[savedMood - 1]}
               </p>
+            )}
+            {/* AI Motivational Message */}
+            {isLoadingMessage && (
+              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                <div className="animate-pulse text-sm text-muted-foreground">
+                  ✨ AI хабарлама дайындалуда...
+                </div>
+              </div>
+            )}
+            {motivationalMessage && !isLoadingMessage && (
+              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm font-medium text-foreground leading-relaxed">
+                  🤖 {motivationalMessage}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
