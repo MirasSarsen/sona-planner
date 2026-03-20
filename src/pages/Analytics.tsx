@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import MotivationalModal from "@/components/MotivationalModal";
 
 // Mood data
 const moodEmojis = ["😢", "😟", "😐", "🙂", "😄"];
@@ -51,7 +52,9 @@ export default function Analytics() {
   const [savedMood, setSavedMood] = useState<number | null>(null);
   const [moodCalendar] = useState(generateMoodCalendar);
   const [motivationalMessage, setMotivationalMessage] = useState<string | null>(null);
+  const [motivationalImage, setMotivationalImage] = useState<string | null>(null);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const now = new Date();
   const year = now.getFullYear();
@@ -69,11 +72,47 @@ export default function Analytics() {
     "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан",
   ];
 
+  const fetchRandomMotivationImage = async () => {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from("content")
+        .list("motivation", { limit: 100 });
+
+      if (error || !files || files.length === 0) {
+        console.log("No motivation images found:", error);
+        return null;
+      }
+
+      // Filter only image files
+      const imageFiles = files.filter((f) =>
+        /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
+      );
+      if (imageFiles.length === 0) return null;
+
+      const randomFile = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+      const { data: urlData } = supabase.storage
+        .from("content")
+        .getPublicUrl(`motivation/${randomFile.name}`);
+
+      return urlData?.publicUrl || null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSaveMood = async () => {
     if (!selectedMood) return;
     setSavedMood(selectedMood);
     setMotivationalMessage(null);
+    setMotivationalImage(null);
     setIsLoadingMessage(true);
+    setShowModal(true);
+
+    // Fetch image and AI message in parallel
+    const [imageUrl] = await Promise.all([
+      fetchRandomMotivationImage(),
+    ]);
+    setMotivationalImage(imageUrl);
 
     try {
       const { data, error } = await supabase.functions.invoke("motivational-message", {
@@ -149,21 +188,6 @@ export default function Analytics() {
               <p className="text-center text-sm text-muted-foreground mt-3">
                 Бүгінгі көңіл-күй: {moodEmojis[savedMood - 1]} {moodLabels[savedMood - 1]}
               </p>
-            )}
-            {/* AI Motivational Message */}
-            {isLoadingMessage && (
-              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 text-center">
-                <div className="animate-pulse text-sm text-muted-foreground">
-                  ✨ AI хабарлама дайындалуда...
-                </div>
-              </div>
-            )}
-            {motivationalMessage && !isLoadingMessage && (
-              <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm font-medium text-foreground leading-relaxed">
-                  🤖 {motivationalMessage}
-                </p>
-              </div>
             )}
           </CardContent>
         </Card>
@@ -283,6 +307,16 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Motivational Modal */}
+      <MotivationalModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        message={motivationalMessage}
+        imageUrl={motivationalImage}
+        isLoading={isLoadingMessage}
+        mood={savedMood}
+      />
     </div>
   );
 }
