@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      kanban_tasks: {
+        Row: {
+          assignee: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          position: number
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
