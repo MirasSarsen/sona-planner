@@ -4,6 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const moodDescriptions: Record<number, string> = {
@@ -16,7 +17,7 @@ const moodDescriptions: Record<number, string> = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -25,7 +26,10 @@ serve(async (req) => {
     if (!mood || mood < 1 || mood > 5) {
       return new Response(
         JSON.stringify({ error: "Mood must be between 1 and 5" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -45,7 +49,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Ты — мотивационный помощник для студента. Отвечай ТОЛЬКО на казахском языке. 
+            content: `Ты — мотивационный помощник для студента. Отвечай ТОЛЬКО на казахском языке.
 Твоя задача — дать короткое (2-3 предложения) мотивационное сообщение на основе текущего настроения студента.
 Если настроение плохое — поддержи и подбодри. Если хорошее — похвали и мотивируй продолжать.
 Используй эмодзи. Не используй заголовки или списки, только текст.`,
@@ -62,15 +66,23 @@ serve(async (req) => {
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Сұраулар лимиті асылды, кейінірек қайталап көріңіз." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
         );
       }
+
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "Кредиттер таусылды." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
         );
       }
+
       const text = await response.text();
       console.error("AI gateway error:", response.status, text);
       throw new Error("AI gateway error");
@@ -81,13 +93,20 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   } catch (e) {
     console.error("Error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: e instanceof Error ? e.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
