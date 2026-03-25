@@ -232,67 +232,91 @@ export default function Analytics() {
     }, [todayMood]);
 
     // ── Mood save ──
-    const handleSaveMood = async () => {
-        if (!selectedMood || !userId) return;
-        setSavingMood(true);
-        setIsLoadingMessage(true);
-        setShowModal(true);
-        setMotivationalMessage(null);
-        setMotivationalImage(null);
+      const handleSaveMood = async () => {
+          if (!selectedMood || !userId) return;
 
-        try {
-            const { error } = await supabase
-                .from("mood_entries")
-                .upsert(
-                    { user_id: userId, date: todayStr, mood: selectedMood },
-                    { onConflict: "user_id,date" }
-          );
-          if (error) {
-            console.log("save mood error", error);
+          setSavingMood(true);
+          setIsLoadingMessage(true);
+          setShowModal(true);
+          setMotivationalMessage(null);
+          setMotivationalImage(null);
+
+          try {
+              const { error } = await supabase
+                  .from("mood_entries")
+                  .upsert(
+                      { user_id: userId, date: todayStr, mood: selectedMood },
+                      { onConflict: "user_id,date" }
+                  );
+
+              if (error) {
+                  console.log("save mood error", error);
+                  throw error;
+              }
+
+              await fetchAll();
+
+              try {
+                  const { data: files } = await supabase.storage
+                      .from("content")
+                      .list("motivation", { limit: 100 });
+
+                  if (files?.length) {
+                      const imgs = files.filter((f) =>
+                          /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
+                      );
+
+                      if (imgs.length) {
+                          const rand =
+                              imgs[Math.floor(Math.random() * imgs.length)];
+
+                          const { data: urlData } = supabase.storage
+                              .from("content")
+                              .getPublicUrl(`motivation/${rand.name}`);
+
+                          if (urlData?.publicUrl) {
+                              setMotivationalImage(urlData.publicUrl);
+                          }
+                      }
+                  }
+              } catch (e) {
+                  console.log("storage image error:", e);
+              }
+
+              try {
+                  const { data, error: fnErr } = await supabase.functions.invoke(
+                      "motivational-message",
+                      { body: { mood: selectedMood } }
+                  );
+
+                  console.log("motivational function data:", data);
+                  console.log("motivational function error:", fnErr);
+
+                  if (fnErr) {
+                      toast({
+                          title: "Қате",
+                          description: "Мотивациялық хабарлама алынбады.",
+                          variant: "destructive",
+                      });
+                  } else if (data?.message) {
+                      setMotivationalMessage(data.message);
+                  } else {
+                      console.log("No data.message returned");
+                  }
+              } catch (e) {
+                  console.log("invoke crash:", e);
+              }
+          } catch (err: any) {
+              toast({
+                  title: "Қате",
+                  description: err.message,
+                  variant: "destructive",
+              });
+          } finally {
+              setSavingMood(false);
+              setIsLoadingMessage(false);
           }
-            if (error) throw error;
-            await fetchAll();
-
-            try {
-                const { data: files } = await supabase.storage
-                    .from("content")
-                    .list("motivation", { limit: 100 });
-                if (files?.length) {
-                    const imgs = files.filter(f =>
-                        /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
-                    );
-                    if (imgs.length) {
-                        const rand =
-                            imgs[Math.floor(Math.random() * imgs.length)];
-                        const { data: urlData } = supabase.storage
-                            .from("content")
-                            .getPublicUrl(`motivation/${rand.name}`);
-                        if (urlData?.publicUrl)
-                            setMotivationalImage(urlData.publicUrl);
-                    }
-                }
-            } catch {}
-
-            try {
-                const { data, error: fnErr } = await supabase.functions.invoke(
-                    "motivational-message",
-                    { body: { mood: selectedMood } }
-                );
-                if (!fnErr && data?.message)
-                    setMotivationalMessage(data.message);
-            } catch {}
-        } catch (err: any) {
-            toast({
-                title: "Қате",
-                description: err.message,
-                variant: "destructive",
-            });
-        } finally {
-            setSavingMood(false);
-            setIsLoadingMessage(false);
-        }
-    };
-
+      };
     // ── Metric CRUD ──
     const openAddMetric = () => {
         setEditingMetric(null);
