@@ -206,6 +206,10 @@ export default function Analytics() {
                     .select("id, status, created_at")
                     .eq("user_id", userId),
             ]);
+          
+          if (moodsRes.error) {
+          console.log("moodsRes.error", moodsRes.error);
+          }
 
             if (!moodsRes.error)
                 setMoodEntries((moodsRes.data as MoodEntry[]) ?? []);
@@ -222,7 +226,7 @@ export default function Analytics() {
         fetchAll();
     }, [fetchAll]);
 
-    const todayMood = moodEntries.find(e => e.date === todayStr);
+    const todayMood = moodEntries.find(e => e.date.split("T")[0] === todayStr);
     useEffect(() => {
         if (todayMood) setSelectedMood(todayMood.mood);
     }, [todayMood]);
@@ -242,7 +246,10 @@ export default function Analytics() {
                 .upsert(
                     { user_id: userId, date: todayStr, mood: selectedMood },
                     { onConflict: "user_id,date" }
-                );
+          );
+          if (error) {
+            console.log("save mood error", error);
+          }
             if (error) throw error;
             await fetchAll();
 
