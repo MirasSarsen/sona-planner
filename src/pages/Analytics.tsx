@@ -313,6 +313,7 @@ export default function Analytics() {
   // ── Computed data ──
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+
   const calendarDays: (number | null)[] = [
     ...Array(firstDayOfWeek).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
