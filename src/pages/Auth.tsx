@@ -78,10 +78,10 @@ export default function Auth() {
           toast({ title: "Тіркелу сәтті!" });
           navigate("/", { replace: true });
         } else {
-          toast({
-            title: "Тіркелу сәтті!",
-            description: "Email-ді растау үшін поштаңызды тексеріңіз.",
-          });
+        toast({
+          title: "Тіркелу сәтті!",
+          description: "Аккаунт жасалды, енді жүйеге кіре аласыз.",
+        });
         }
       }
     } catch (err: any) {
