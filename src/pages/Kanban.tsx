@@ -33,17 +33,23 @@ export default function Kanban() {
 
   const fetchTasks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("kanban_tasks")
       .select("*")
+      .eq("user_id", user.id)
       .order("position", { ascending: true });
 
     if (error) {
       console.error("Error fetching tasks:", error);
+      setLoading(false);
       return;
     }
+
     setTasks((data || []) as KanbanTask[]);
     setLoading(false);
   };
@@ -76,10 +82,22 @@ export default function Kanban() {
   };
 
   const deleteTask = async (id: string) => {
-    await supabase.from("kanban_tasks").delete().eq("id", id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-  };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
+    const { error } = await supabase
+      .from("kanban_tasks")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Қате", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+};
   const onDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
