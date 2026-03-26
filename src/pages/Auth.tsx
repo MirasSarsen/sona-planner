@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +14,34 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/");
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
         if (error) throw error;
+
         toast({ title: "Сәтті кірдіңіз!" });
+        navigate("/");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -31,7 +51,9 @@ export default function Auth() {
             emailRedirectTo: window.location.origin,
           },
         });
+
         if (error) throw error;
+
         toast({
           title: "Тіркелу сәтті!",
           description: "Email-ді растау үшін поштаңызды тексеріңіз.",
@@ -55,6 +77,7 @@ export default function Auth() {
           <h1 className="text-2xl font-bold text-center mb-6 text-foreground">
             {isLogin ? "Кіру" : "Тіркелу"}
           </h1>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-1.5">
@@ -66,6 +89,7 @@ export default function Auth() {
                 />
               </div>
             )}
+
             <div className="space-y-1.5">
               <Label>Email</Label>
               <Input
@@ -76,6 +100,7 @@ export default function Auth() {
                 required
               />
             </div>
+
             <div className="space-y-1.5">
               <Label>Құпиясөз</Label>
               <Input
@@ -87,13 +112,16 @@ export default function Auth() {
                 minLength={6}
               />
             </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Жүктелуде..." : isLogin ? "Кіру" : "Тіркелу"}
             </Button>
           </form>
+
           <p className="text-center text-sm text-muted-foreground mt-4">
             {isLogin ? "Аккаунтыңыз жоқ па?" : "Аккаунтыңыз бар ма?"}{" "}
             <button
+              type="button"
               onClick={() => setIsLogin(!isLogin)}
               className="text-primary hover:underline font-medium"
             >
