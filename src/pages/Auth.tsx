@@ -33,8 +33,10 @@ export default function Auth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         navigate("/", { replace: true });
       }
     });
@@ -59,11 +61,8 @@ export default function Auth() {
         if (error) throw error;
 
         toast({ title: "Сәтті кірдіңіз!" });
-
-        // Доп. подстраховка
-        navigate("/", { replace: true });
       } else {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -74,15 +73,13 @@ export default function Auth() {
 
         if (error) throw error;
 
-        if (data.session) {
-          toast({ title: "Тіркелу сәтті!" });
-          navigate("/", { replace: true });
-        } else {
         toast({
           title: "Тіркелу сәтті!",
           description: "Аккаунт жасалды, енді жүйеге кіре аласыз.",
         });
-        }
+
+        setIsLogin(true);
+        setPassword("");
       }
     } catch (err: any) {
       toast({

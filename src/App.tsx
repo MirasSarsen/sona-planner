@@ -17,19 +17,47 @@ const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(undefined);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    let mounted = true;
+
+    const initSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setSession(session);
+        setLoading(false);
+      }
+    };
+
+    initSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setSession(session);
+        setLoading(false);
+      }
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  if (session === undefined) return null;
-  if (!session) return <Navigate to="/auth" replace />;
+  if (loading) {
+    return <div className="p-6">Жүктелуде...</div>;
+  }
+
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return <>{children}</>;
 }
 
