@@ -17,14 +17,32 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate("/");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted && session) {
+        navigate("/", { replace: true });
       }
     };
 
     checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        navigate("/", { replace: true });
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,23 +59,30 @@ export default function Auth() {
         if (error) throw error;
 
         toast({ title: "Сәтті кірдіңіз!" });
-        navigate("/");
+
+        // Доп. подстраховка
+        navigate("/", { replace: true });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/`,
           },
         });
 
         if (error) throw error;
 
-        toast({
-          title: "Тіркелу сәтті!",
-          description: "Email-ді растау үшін поштаңызды тексеріңіз.",
-        });
+        if (data.session) {
+          toast({ title: "Тіркелу сәтті!" });
+          navigate("/", { replace: true });
+        } else {
+          toast({
+            title: "Тіркелу сәтті!",
+            description: "Email-ді растау үшін поштаңызды тексеріңіз.",
+          });
+        }
       }
     } catch (err: any) {
       toast({
