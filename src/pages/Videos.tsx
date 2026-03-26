@@ -19,13 +19,13 @@ const staticVideos: Video[] = [
   {
     id: "1",
     title: "Первое видео",
-    url: "https://www.youtube.com/watch?v=XXXXXXXXXXX",
+    url: "https://youtu.be/7_6U83nbN9g?si=KJtJUYj4iKKh51bh",
     description: "Описание первого видео",
   },
   {
     id: "2",
     title: "Второе видео",
-    url: "https://www.youtube.com/watch?v=YYYYYYYYYYY",
+    url: "https://youtu.be/vvRDe8CdeUA?si=fGxODw5RfdVyDiRY",
     description: "Описание второго видео",
   },
 ];
