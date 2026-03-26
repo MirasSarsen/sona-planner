@@ -18,15 +18,39 @@ function extractYoutubeId(url: string): string | null {
 const staticVideos: Video[] = [
   {
     id: "1",
-    title: "Первое видео",
+    title: "Как учиться в 10 раз быстрее и запоминать навсегда",
     url: "https://youtu.be/7_6U83nbN9g?si=KJtJUYj4iKKh51bh",
-    description: "Описание первого видео",
+    description: "Видео про ускоренное обучение и лучшее запоминание информации.",
   },
   {
     id: "2",
-    title: "Второе видео",
+    title: "A to Z Diary: Why You Need It and How to Keep It",
     url: "https://youtu.be/vvRDe8CdeUA?si=fGxODw5RfdVyDiRY",
-    description: "Описание второго видео",
+    description: "Видео о том, зачем нужен ежедневник и как его правильно вести.",
+  },
+  {
+    id: "3",
+    title: "Car Camping Buried by an Extreme Blizzard",
+    url: "https://youtu.be/o_L4algQxfg?si=ViiPDJaCfaRSNP8K",
+    description: "Атмосферное видео про выезд и ночёвку в машине во время сильной метели.",
+  },
+  {
+    id: "4",
+    title: "Winter Storm Ambience with Icy Howling Wind Sounds",
+    url: "https://youtu.be/sGkh1W5cbH4?si=CDbwA_MkjeUdkBFn",
+    description: "Фоновое видео со звуками зимней бури для сна, отдыха и учёбы.",
+  },
+  {
+    id: "5",
+    title: "Powerful Thunderstorm Is Heading Your Way | Your Childhood Village | Calm Before the Storm | 3 HOURS",
+    url: "https://youtu.be/Z5_-59tIG-8?si=NcuPgHnZy07mkveV",
+    description: "Долгое атмосферное видео с грозой и спокойной деревенской обстановкой перед бурей.",
+  },
+  {
+    id: "6",
+    title: "Учись как одержимый — как понять любую тему за 7 дней",
+    url: "https://youtu.be/26cyjMsjQ0E?si=efenaJntO6Cgaobk",
+    description: "Видео о подходе к быстрому погружению в тему и интенсивному обучению.",
   },
 ];
 
